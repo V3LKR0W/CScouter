@@ -17,17 +17,21 @@ surrenders = []
 w = []
 s = []
 cs = []
+a = []
 
 try:
     Req = requests.get('https://127.0.0.1:2999/liveclientdata/allgamedata', verify=False).json()
 except Exception:
-    print(color('Could\'t find a connection to the local server.', Colors.red))
-    
+    print(color('Couldn\'t find a connection to the local server.', Colors.red))
+
+
+
 for Player in Req['allPlayers']:
     getSummonerUsername = requests.get(f'https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{Player["summonerName"]}?api_key={Config["API_KEY"]}').json()
     Players.append(dict(
                         name=getSummonerUsername['name'],
                         id=getSummonerUsername['puuid'],
+                        current_champion=Player['championName'],
                         level=0,
                         games=[],
                         kill_arry=[], 
@@ -39,9 +43,12 @@ for Player in Req['allPlayers']:
                         surrenders_arry=[],
                         avg_surrenders=0,
                         cs_arry=[],
-                        avg_cs=0
+                        avg_cs=0,
+                        assists_arry=[],
+                        avg_assists=0,
                         ))
-    
+
+
 for x in range(len(Players)):
     games = requests.get(f'https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{Players[x]["id"]}/ids?type=normal&start=0&count={Config["Count"]}&api_key={Config["API_KEY"]}').json()
     Players[x]['games'] = games
@@ -51,13 +58,13 @@ def find_avg(table,store):
     for x in range(len(Players)):
         tble = Players[x][str(table)]
         ans = sum(tble) / int(Config['Count'])
-        Players[x][str(store)] = ans
+        Players[x][str(store)] = int(ans)
 
 def total(table, store):
     for x in range(len(Players)):
         tble = Players[x][str(table)]
         ans = sum(tble)
-        Players[x][str(store)] = ans
+        Players[x][str(store)] = int(ans)
     
        
 
@@ -71,6 +78,8 @@ for i in range(len(Players)):
                     
                     kills.append(Match['info']['participants'][z]['kills'])
                     
+                    a.append(Match['info']['participants'][z]['assists'])
+                    
                     deaths.append(Match['info']['participants'][z]['deaths'])
                     
                     wins.append(Match['info']['participants'][z]['win'])
@@ -83,6 +92,8 @@ for i in range(len(Players)):
                     Players[i]['level'] = Match['info']['participants'][z]['summonerLevel']
                     
                     Players[i]['kill_arry'] = kills.copy()
+                    
+                    Players[i]['assists_arry'] = kills.copy()
                     
                     Players[i]['death_arry'] = deaths.copy()
                     
@@ -103,12 +114,16 @@ for i in range(len(Players)):
     wins.clear()
     surrenders.clear()
     cs.clear()
+    a.clear()
+    
 
     find_avg('kill_arry','avg_kills')
     
     find_avg('death_arry','avg_deaths')
     
     find_avg('cs_arry', 'avg_cs')
+    
+    find_avg('assists_arry', 'avg_assists')
     
     total('wins_arry', 'avg_wins')
     
@@ -119,7 +134,7 @@ for i in range(len(Players)):
 # Final Output 
 os.system('cls')
 for x in range(len(Players)):
-    print(color(f'{Players[x]["name"]} Level ({Players[x]["level"]}) \n Averages {Players[x]["avg_kills"]} kills per game. \n Averages {Players[x]["avg_deaths"]} deaths per game. \n {Players[x]["avg_wins"]}/{Config["Count"]} have games been wins and {Players[x]["avg_surrenders"]} game was an early FF. \n They have an average CS score of {Players[x]["avg_cs"]}', Colors.blue))
+    print(color(f'{Players[x]["current_champion"]} - {Players[x]["name"]} - Level ({Players[x]["level"]}) \n Averages {Players[x]["avg_kills"]} kills per game. \n Averages {Players[x]["avg_deaths"]} deaths per game. \n Averages {Players[x]["avg_assists"]} assists per game. \n {Players[x]["avg_wins"]}/{Config["Count"]} have games been wins and {Players[x]["avg_surrenders"]} games were ended early by FF. \n They have an average CS score of {Players[x]["avg_cs"]}', Colors.blue))
     print(color('--------------------', Colors.purple))
          
 print(color(f'All stats are based off the players last {Config["Count"]}. You Can change this in the ".env" file.', Colors.red))
